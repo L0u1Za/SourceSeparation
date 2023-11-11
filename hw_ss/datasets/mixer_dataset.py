@@ -74,7 +74,7 @@ class MixerDataset(BaseDataset):
     def _create_index(self, part):
         index = []
         split_dir = self._data_dir / part
-        print(split_dir)
+
         if not split_dir.exists():
             self._load_part(part)
 
