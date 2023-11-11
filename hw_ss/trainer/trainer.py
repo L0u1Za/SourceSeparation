@@ -220,8 +220,8 @@ class Trainer(BaseTrainer):
                 "prediction": pred_wavs,
                 "mixed": audio_mixed
             }
-            self.writer.add_audio("prediction", audio_target, sample_rate=16000)
-            self.writer.add_audio("target", pred_wavs, sample_rate=16000)
+            self.writer.add_audio("prediction", pred_wavs, sample_rate=16000)
+            self.writer.add_audio("target", audio_target, sample_rate=16000)
             self.writer.add_audio("mixed", audio_mixed, sample_rate=16000)
         #self.writer.add_table("predictions", pd.DataFrame.from_dict(rows, orient="index"))
 
