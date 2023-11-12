@@ -141,7 +141,7 @@ class Trainer(BaseTrainer):
             batch["ests"] = outputs
             batch["predict_wavs"] = outputs[0].squeeze(1)
 
-        if (batch["logits"]):
+        if (batch["logits"] is not None):
             batch["log_probs"] = F.log_softmax(batch["logits"], dim=-1)
 
         batch["loss"] = self.criterion(**batch)

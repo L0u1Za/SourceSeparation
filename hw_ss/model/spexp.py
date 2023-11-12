@@ -80,6 +80,8 @@ class SpeechEncoder(nn.Module):
     def forward(self, audio):
         audio = audio.unsqueeze(1)
         outputs = [self.act(self.short(audio)), self.act(self.middle(audio)), self.act(self.long(audio))]
+        length = min([outputs[0].shape[-1], outputs[1].shape[-1], outputs[2].shape[-1]])
+        outputs = outputs[0][:,:,:length], outputs[1][:,:,:length], outputs[2][:,:,:length]
         e1, e2, e3 = outputs
         outputs = torch.concat(outputs, dim=1)
         return outputs, (e1, e2, e3)
@@ -162,7 +164,7 @@ class SpeechDecoder(nn.Module):
     def __init__(self, N, L1, L2, L3):
         super().__init__()
 
-        self.short = nn.ConvTranspose1d(N, 1, L1, stride=L1//2, output_padding=(L1 - 1)//2 - 1)
+        self.short = nn.ConvTranspose1d(N, 1, L1, stride=L1//2, padding=(L1 - 1) // 2, output_padding=(L1 - 1)//2 - 1)
         self.middle = nn.ConvTranspose1d(N, 1, L2, stride=L1//2, padding=(L2 - 1) // 2, output_padding=(L1 - 1)//2 - 1)
         self.long = nn.ConvTranspose1d(N, 1, L3, stride=L1//2, padding=(L3 - 1) // 2, output_padding=(L1 - 1)//2 - 1)
 
