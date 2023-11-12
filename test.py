@@ -12,6 +12,9 @@ from hw_ss.utils import ROOT_PATH
 from hw_ss.utils.object_loading import get_dataloaders
 from hw_ss.utils.parse_config import ConfigParser
 
+from hw_ss.metric.si_sdr import SISDRMetric
+from hw_ss.metric.pesq import PESQMetric
+
 DEFAULT_CHECKPOINT_PATH = ROOT_PATH / "default_test_model" / "checkpoint.pth"
 
 
@@ -42,36 +45,30 @@ def main(config, out_file):
     model = model.to(device)
     model.eval()
 
-    results = []
+    metrics = {
+        "SISDR": 0.0,
+        "PESQ": 0.0
+    }
+    sisdr =  SISDRMetric()
+    pesq = PESQMetric()
 
     with torch.no_grad(): ## TO CHANGE
         for batch_num, batch in enumerate(tqdm(dataloaders["test"])):
             batch = Trainer.move_batch_to_device(batch, device)
-            output = model(**batch)
+            output, cls = model(**batch)
             if type(output) is dict:
                 batch.update(output)
             else:
-                batch["logits"] = output
-            batch["log_probs"] = torch.log_softmax(batch["logits"], dim=-1)
-            batch["log_probs_length"] = model.transform_input_lengths(
-                batch["spectrogram_length"]
-            )
-            batch["probs"] = batch["log_probs"].exp().cpu()
-            batch["argmax"] = batch["probs"].argmax(-1)
-            for i in range(len(batch["text"])):
-                argmax = batch["argmax"][i]
-                argmax = argmax[: int(batch["log_probs_length"][i])]
-                results.append(
-                    {
-                        "ground_trurh": batch["text"][i],
-                        "pred_text_argmax": text_encoder.ctc_decode(argmax.cpu().numpy()),
-                        "pred_text_beam_search": text_encoder.ctc_beam_search(
-                            batch["probs"][i], batch["log_probs_length"][i], beam_size=100
-                        )[:10],
-                    }
-                )
+                batch["ests"] = output
+                batch["predict_wavs"] = output[0].squeeze(1)
+
+            metrics["SISDR"] += sisdr(**batch)
+            metrics["PESQ"] += pesq(**batch)
+
+        print(metrics)
+
     with Path(out_file).open("w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(metrics, f, indent=2)
 
 
 if __name__ == "__main__":
@@ -114,7 +111,7 @@ if __name__ == "__main__":
     args.add_argument(
         "-b",
         "--batch-size",
-        default=5,
+        default=2,
         type=int,
         help="Test dataset batch size",
     )
@@ -155,10 +152,7 @@ if __name__ == "__main__":
                     {
                         "type": "CustomDirAudioDataset",
                         "args": {
-                            "audio_dir": str(test_data_folder / "audio"),
-                            "transcription_dir": str(
-                                test_data_folder / "transcriptions"
-                            ),
+                            "data_dir": str(test_data_folder)
                         },
                     }
                 ],
