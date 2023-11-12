@@ -5,7 +5,7 @@ import torch
 from hw_ss.base import BaseModel
 
 class TCNBlock(nn.Module):
-    def __init__(self, O, Q, P, B, embed_dim=None):
+    def __init__(self, O, P, Q, B, embed_dim=None):
         super().__init__()
 
         if (embed_dim):
