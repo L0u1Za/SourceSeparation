@@ -20,6 +20,9 @@
             "L1": 25,
             "L2": 100,
             "L3": 200,
+            "O": 10,
+            "P": 20,
+            "Q": 32,
             "num_speakers": 10000
         }
     },
@@ -33,7 +36,7 @@
                     "args": {
                         "part": "dev-clean",
                         "max_audio_length": 20.0,
-                        "limit": 2
+                        "limit": 10
                     }
                 }
             ]
@@ -47,7 +50,7 @@
                     "args": {
                         "part": "dev-clean-4",
                         "max_audio_length": 20.0,
-                        "limit": 2
+                        "limit": 10
                     }
                 }
             ]
@@ -64,7 +67,7 @@
         "args": {
             "alpha": 0.1,
             "beta": 0.1,
-            "gamma": 0.1
+            "gamma": 0.5
         }
     },
     "metrics": [
@@ -92,7 +95,7 @@
         }
     },
     "trainer": {
-        "epochs": 15,
+        "epochs": 30,
         "save_dir": "saved/",
         "save_period": 5,
         "verbosity": 2,
