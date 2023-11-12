@@ -17,8 +17,8 @@ class SISDRLoss(torch.nn.Module):
             gamma = torch.bmm(audio_target, est.transpose(1, 2))
             gamma /= torch.bmm(audio_target, audio_target.transpose(1, 2))
             in_norm = torch.bmm(gamma, audio_target).squeeze(1)
-            up = torch.norm(in_norm, p=2, dim=1)
-            down = torch.norm(in_norm - est.squeeze(1), p=2, dim=1)
+            up = torch.linalg.norm(in_norm, ord=2, dim=1)
+            down = torch.linalg.norm(in_norm - est.squeeze(1), ord=2, dim=1)
 
             result = 20 * torch.log10(up / (down + self.eps) + self.eps)
             if i == 0:

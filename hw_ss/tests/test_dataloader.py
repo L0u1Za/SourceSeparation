@@ -21,26 +21,13 @@ class TestDataloader(unittest.TestCase):
             batch_size = 3
             batch = collate_fn([ds[i] for i in range(batch_size)])
 
-            self.assertIn("spectrogram", batch)  # torch.tensor
-            batch_size_dim, feature_length_dim, time_dim = batch["spectrogram"].shape
-            self.assertEqual(batch_size_dim, batch_size)
-            self.assertEqual(feature_length_dim, 128)
+            self.assertIn("audio_target", batch)  # torch.tensor
+            self.assertIn("audio_mixed", batch)  # torch.tensor
+            self.assertIn("audio_ref", batch)  # torch.tensor
 
-            self.assertIn("text_encoded", batch)  # [int] torch.tensor
-            # joined and padded indexes representation of transcriptions
-            batch_size_dim, text_length_dim = batch["text_encoded"].shape
-            self.assertEqual(batch_size_dim, batch_size)
-
-            self.assertIn("text_encoded_length", batch)  # [int] torch.tensor
-            # contains lengths of each text entry
-            self.assertEqual(len(batch["text_encoded_length"].shape), 1)
-            batch_size_dim = batch["text_encoded_length"].shape[0]
-            self.assertEqual(batch_size_dim, batch_size)
-
-            self.assertIn("text", batch)  # List[str]
-            # simple list of initial normalized texts
-            batch_size_dim = len(batch["text"])
-            self.assertEqual(batch_size_dim, batch_size)
+            self.assertIn("spectrogram_target", batch)  # torch.tensor
+            self.assertIn("spectrogram_mixed", batch)  # torch.tensor
+            self.assertIn("spectrogram_ref", batch)  # torch.tensor
 
     def test_dataloaders(self):
         _TOTAL_ITERATIONS = 10
