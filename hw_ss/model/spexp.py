@@ -79,7 +79,7 @@ class SpeechEncoder(nn.Module):
 
     def forward(self, audio):
         audio = audio.unsqueeze(1)
-        outputs = [self.act(self.short(audio))[:,:,], self.act(self.middle(audio)), self.act(self.long(audio))]
+        outputs = [self.act(self.short(audio)), self.act(self.middle(audio)), self.act(self.long(audio))]
         e1, e2, e3 = outputs
         outputs = torch.concat(outputs, dim=1)
         return outputs, (e1, e2, e3)
@@ -185,11 +185,16 @@ class SpExp(BaseModel):
 
     def forward(self, audio_mixed, audio_ref, **batch):
         speech, e = self.speech_encoder(audio_mixed)
+        print("After speech encoder: mixed", speech.shape, e[0].shape, e[0].shape, e[0].shape)
         speaker, _ = self.speech_encoder(audio_ref)
+        print("After speech encoder: ref", speaker.shape)
 
         speaker, cls = self.speaker_encoder(speaker)
+        print("After speaker encoder", speaker.shape)
         m = self.speaker_extractor(speech, speaker)
+        print("After speaker extractor", m[0].shape, m[1].shape, m[2].shape)
         short, middle, long = self.speech_decoder(*m, *e)
+        print("After speech decoder", short.shape, middle.shape, long.shape)
         return (short, middle, long), cls
 
     def transform_input_lengths(self, input_lengths):
