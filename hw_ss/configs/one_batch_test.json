@@ -46,7 +46,7 @@
         {
           "type": "MixerDataset",
           "args": {
-            "part": "dev-clean",
+            "part": "dev-clean-4",
             "max_audio_length": 20.0,
             "limit": 2
           }

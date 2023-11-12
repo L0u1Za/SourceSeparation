@@ -162,15 +162,14 @@ class SpeechDecoder(nn.Module):
     def __init__(self, N, L1, L2, L3):
         super().__init__()
 
-        self.short = nn.ConvTranspose1d(N, 1, L1, stride=L1//2, padding=(L1 - 1) // 2, output_padding=(L1 - 1)//2 - 1)
+        self.short = nn.ConvTranspose1d(N, 1, L1, stride=L1//2, output_padding=(L1 - 1)//2 - 1)
         self.middle = nn.ConvTranspose1d(N, 1, L2, stride=L1//2, padding=(L2 - 1) // 2, output_padding=(L1 - 1)//2 - 1)
         self.long = nn.ConvTranspose1d(N, 1, L3, stride=L1//2, padding=(L3 - 1) // 2, output_padding=(L1 - 1)//2 - 1)
 
-    def forward(self, m1, m2, m3, e1, e2, e3):
-        lengths = e1.shape[-1], e2.shape[-1], e3.shape[-1]
+    def forward(self, m1, m2, m3, e1, e2, e3, length):
         e1, e2, e3 = m1 * e1, m2 * e2, m3 * e3
         e1, e2, e3 = self.short(e1), self.middle(e2), self.long(e3)
-        e1, e2, e3 = e1[:,:,:lengths[0] * 12], e2[:,:,:lengths[1] * 12], e3[:,:,:lengths[2] * 12]
+        e1, e2, e3 = e1[:,:,:length], e2[:,:,:length], e3[:,:,:length]
         return e1, e2, e3
 
 class SpExp(BaseModel):
@@ -183,18 +182,20 @@ class SpExp(BaseModel):
 
         self.speaker_encoder = SpeakerEncoder(N, N, num_speakers=num_speakers, embed_dim=speaker_dim)
 
-    def forward(self, audio_mixed, audio_ref, **batch):
+    def forward(self, audio_mixed, audio_ref, audio_target, **batch):
+        length = audio_target.shape[-1]
+        #print("Input:", length)
         speech, e = self.speech_encoder(audio_mixed)
-        print("After speech encoder: mixed", speech.shape, e[0].shape, e[0].shape, e[0].shape)
+        #print("After speech encoder: mixed", speech.shape, e[0].shape, e[1].shape, e[1].shape)
         speaker, _ = self.speech_encoder(audio_ref)
-        print("After speech encoder: ref", speaker.shape)
+        #print("After speech encoder: ref", speaker.shape)
 
         speaker, cls = self.speaker_encoder(speaker)
-        print("After speaker encoder", speaker.shape)
+        #print("After speaker encoder", speaker.shape)
         m = self.speaker_extractor(speech, speaker)
-        print("After speaker extractor", m[0].shape, m[1].shape, m[2].shape)
-        short, middle, long = self.speech_decoder(*m, *e)
-        print("After speech decoder", short.shape, middle.shape, long.shape)
+        #print("After speaker extractor", m[0].shape, m[1].shape, m[2].shape)
+        short, middle, long = self.speech_decoder(*m, *e, length)
+        #print("After speech decoder", short.shape, middle.shape, long.shape)
         return (short, middle, long), cls
 
     def transform_input_lengths(self, input_lengths):

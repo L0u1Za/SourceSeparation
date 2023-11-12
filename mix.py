@@ -25,4 +25,4 @@ if __name__ == "__main__":
     speakers = [el.name for el in os.scandir(path)]
     speakers_files = [LibriSpeechSpeakerFiles(i, path, audioTemplate='*.flac') for i in speakers]
     mixer = MixtureGenerator(speakers_files, o_path, test=not(train))
-    mixer.generate_mixes(snr_levels=[-5, 5], num_workers=2, update_steps=100, trim_db=20, vad_db=20, audioLen=3)
+    mixer.generate_mixes(snr_levels=[-5, 5], num_workers=2, update_steps=100, trim_db=20, vad_db=20, audioLen=4)
