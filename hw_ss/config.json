@@ -48,7 +48,8 @@
           "args": {
             "data_dir": "/kaggle/input/tgritsaev-big-mixture-w-text/mixture",
             "index_dir": "/kaggle/working",
-            "part": "test"
+            "part": "test",
+            "limit": 50
           }
         }
       ]
