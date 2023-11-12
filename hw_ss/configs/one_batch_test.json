@@ -22,6 +22,9 @@
       "L1": 25,
       "L2": 100,
       "L3": 200,
+      "O": 10,
+      "P": 20,
+      "Q": 3,
       "num_speakers": 10000
     }
   },
@@ -35,7 +38,7 @@
           "args": {
             "part": "dev-clean",
             "max_audio_length": 20.0,
-            "limit": 2
+            "limit": 10
           }
         }
       ]
@@ -49,7 +52,7 @@
           "args": {
             "part": "dev-clean-4",
             "max_audio_length": 20.0,
-            "limit": 2
+            "limit": 10
           }
         }
       ]

@@ -5,17 +5,29 @@ import torch
 from hw_ss.base import BaseModel
 
 class TCNBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, B):
+    def __init__(self, O, Q, P, B, embed_dim=None):
         super().__init__()
 
-        self.conv = Sequential(
-            nn.Conv1d(in_channels, out_channels, 1),
-            nn.PReLU(),
-            LayerNorm(out_channels), # must be Global Layer Normalization
-            nn.Conv1d(out_channels, out_channels, kernel_size, dilation=B, padding= (B * (kernel_size - 1) + 1) // 2),
-            nn.PReLU(),
-            LayerNorm(out_channels), # must be Global Layer Normalization
-        )
+        if (embed_dim):
+            self.conv = Sequential(
+                nn.Conv1d(O+embed_dim, P, 1),
+                nn.PReLU(),
+                LayerNorm(P), # must be Global Layer Normalization
+                nn.Conv1d(P, P, Q, dilation=B, padding= (B * (Q - 1) + 1) // 2),
+                nn.PReLU(),
+                LayerNorm(P), # must be Global Layer Normalization
+                nn.Conv1d(P, O, 1),
+            )
+        else:
+            self.conv = Sequential(
+                nn.Conv1d(O, P, 1),
+                nn.PReLU(),
+                LayerNorm(P), # must be Global Layer Normalization
+                nn.Conv1d(P, P, Q, dilation=B, padding= (B * (Q - 1) + 1) // 2),
+                nn.PReLU(),
+                LayerNorm(P), # must be Global Layer Normalization
+                nn.Conv1d(P, O, 1),
+            )
     def forward(self, inputs, v=None):
         outputs = inputs
         if (v is not None):
@@ -28,14 +40,13 @@ class TCNBlock(nn.Module):
         return outputs
 
 class StackedTCN(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, B):
+    def __init__(self, O, P, Q, B, embed_dim=256):
         super().__init__()
 
         self.tcn = nn.ModuleList()
-        self.tcn.append(TCNBlock(in_channels, out_channels, kernel_size, B))
-        B -= 1
         while (B > 0):
-            self.tcn.append(TCNBlock(out_channels, out_channels, kernel_size, B))
+            self.tcn.append(TCNBlock(O, P, Q, B, embed_dim=embed_dim))
+            embed_dim=None
             B -= 1
 
     def forward(self, inputs, v):
@@ -46,15 +57,15 @@ class StackedTCN(nn.Module):
         return output
 
 class ResNetBlock(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, O, P):
         super().__init__()
 
         self.conv = Sequential(
-            nn.Conv1d(in_channels, out_channels, 1),
-            nn.BatchNorm1d(out_channels),
+            nn.Conv1d(O, P, 1),
+            nn.BatchNorm1d(P),
             nn.PReLU(),
-            nn.Conv1d(out_channels, out_channels, 1),
-            nn.BatchNorm1d(out_channels)
+            nn.Conv1d(P, O, 1),
+            nn.BatchNorm1d(O)
         )
         self.out = Sequential(
             nn.PReLU(),
@@ -97,19 +108,19 @@ class LayerNorm(nn.LayerNorm):
         return outputs
 
 class SpeakerEncoder(nn.Module):
-    def __init__(self, N, out_channels, num_rn=3, embed_dim=256, num_speakers=None):
+    def __init__(self, N, O, P, num_rn=3, embed_dim=256, num_speakers=None):
         super().__init__()
 
         self.conv1 = Sequential(
             LayerNorm(3 * N),
-            nn.Conv1d(3 * N, out_channels, 1),
+            nn.Conv1d(3 * N, O, 1),
         )
         self.resnet = nn.ModuleList()
         for _ in range(num_rn):
-            self.resnet.append(ResNetBlock(out_channels, out_channels))
+            self.resnet.append(ResNetBlock(O, P))
 
         self.conv2 = Sequential(
-            nn.Conv1d(out_channels, embed_dim, 1)
+            nn.Conv1d(O, embed_dim, 1)
         )
         if (num_speakers):
             self.head = Sequential(
@@ -127,28 +138,28 @@ class SpeakerEncoder(nn.Module):
         return outputs, classification
 
 class SpeakerExtractor(nn.Module):
-    def __init__(self, N, out_channels, kernel_size, embed_dim=256, B=8, R=4):
+    def __init__(self, N, O, P, Q, embed_dim=256, B=8, R=4):
         super().__init__()
 
         self.N = N
         self.conv = Sequential(
             LayerNorm(3 * N),
-            nn.Conv1d(3 * N, out_channels, 1)
+            nn.Conv1d(3 * N, O, 1)
         )
         self.tcn = nn.ModuleList()
         for _ in range(R):
-            self.tcn.append(StackedTCN(out_channels + embed_dim, out_channels, kernel_size, B))
+            self.tcn.append(StackedTCN(O, P, Q, B, embed_dim=embed_dim))
 
         self.short = Sequential(
-            nn.Conv1d(N, 1, 1),
+            nn.Conv1d(O, 1, 1),
             nn.ReLU()
         )
         self.middle = Sequential(
-            nn.Conv1d(N, 1, 1),
+            nn.Conv1d(O, 1, 1),
             nn.ReLU()
         )
         self.long = Sequential(
-            nn.Conv1d(N, 1, 1),
+            nn.Conv1d(O, 1, 1),
             nn.ReLU()
         )
 
@@ -175,14 +186,14 @@ class SpeechDecoder(nn.Module):
         return e1, e2, e3
 
 class SpExp(BaseModel):
-    def __init__(self, N, L1, L2, L3, num_speakers=None, speaker_dim=256, **batch):
+    def __init__(self, N, L1, L2, L3, O=256, P=512, Q=3, num_speakers=None, speaker_dim=256, **batch):
         super().__init__(**batch)
 
         self.speech_encoder = SpeechEncoder(N, L1, L2, L3)
-        self.speaker_extractor = SpeakerExtractor(N, N, 256, embed_dim=speaker_dim)
+        self.speaker_extractor = SpeakerExtractor(N, O, P, Q, embed_dim=speaker_dim)
         self.speech_decoder = SpeechDecoder(N, L1, L2, L3)
 
-        self.speaker_encoder = SpeakerEncoder(N, N, num_speakers=num_speakers, embed_dim=speaker_dim)
+        self.speaker_encoder = SpeakerEncoder(N, O, P, num_speakers=num_speakers, embed_dim=speaker_dim)
 
     def forward(self, audio_mixed, audio_ref, audio_target, **batch):
         length = audio_target.shape[-1]
