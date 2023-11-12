@@ -79,7 +79,7 @@ class SpeechEncoder(nn.Module):
 
     def forward(self, audio):
         audio = audio.unsqueeze(1)
-        outputs = [self.act(self.short(audio)), self.act(self.middle(audio)), self.act(self.long(audio))]
+        outputs = [self.act(self.short(audio))[:,:,], self.act(self.middle(audio)), self.act(self.long(audio))]
         e1, e2, e3 = outputs
         outputs = torch.concat(outputs, dim=1)
         return outputs, (e1, e2, e3)
@@ -151,10 +151,11 @@ class SpeakerExtractor(nn.Module):
         )
 
     def forward(self, inputs, v):
+        length = inputs.shape[-1]
         outputs = self.conv(inputs)
         for layer in self.tcn:
             outputs = layer(outputs, v)
-        return self.short(outputs), self.middle(outputs), self.long(outputs)
+        return self.short(outputs)[:,:,:length], self.middle(outputs)[:,:,:length], self.long(outputs)[:,:,:length]
 
 
 class SpeechDecoder(nn.Module):
@@ -166,9 +167,10 @@ class SpeechDecoder(nn.Module):
         self.long = nn.ConvTranspose1d(N, 1, L3, stride=L1//2, padding=(L3 - 1) // 2, output_padding=(L1 - 1)//2 - 1)
 
     def forward(self, m1, m2, m3, e1, e2, e3):
+        lengths = e1.shape[-1], e2.shape[-1], e3.shape[-1]
         e1, e2, e3 = m1 * e1, m2 * e2, m3 * e3
         e1, e2, e3 = self.short(e1), self.middle(e2), self.long(e3)
-        e1, e2, e3 = e1[:,:,:m1.shape[-1] * 12], e2[:,:,:m2.shape[-1] * 12], e3[:,:,:m3.shape[-1] * 12]
+        e1, e2, e3 = e1[:,:,:lengths[0] * 12], e2[:,:,:lengths[1] * 12], e3[:,:,:lengths[2] * 12]
         return e1, e2, e3
 
 class SpExp(BaseModel):
