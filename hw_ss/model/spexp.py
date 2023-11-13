@@ -197,18 +197,15 @@ class SpExp(BaseModel):
 
     def forward(self, audio_mixed, audio_ref, audio_target, **batch):
         length = audio_target.shape[-1]
-        #print("Input:", length)
+
         speech, e = self.speech_encoder(audio_mixed)
-        #print("After speech encoder: mixed", speech.shape, e[0].shape, e[1].shape, e[1].shape)
         speaker, _ = self.speech_encoder(audio_ref)
-        #print("After speech encoder: ref", speaker.shape)
 
         speaker, cls = self.speaker_encoder(speaker)
-        #print("After speaker encoder", speaker.shape)
+
         m = self.speaker_extractor(speech, speaker)
-        #print("After speaker extractor", m[0].shape, m[1].shape, m[2].shape)
         short, middle, long = self.speech_decoder(*m, *e, length)
-        #print("After speech decoder", short.shape, middle.shape, long.shape)
+
         return (short, middle, long), cls
 
     def transform_input_lengths(self, input_lengths):

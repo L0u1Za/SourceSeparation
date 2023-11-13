@@ -2,7 +2,7 @@
 
 ## Report
 
-You may see the report if you follow [this link](https://api.wandb.ai/links/l0u1za/q4ofufk1)
+You may see the report if you follow [this link](https://api.wandb.ai/links/l0u1za/kvm4x41t)
 
 ## Installation guide
 
@@ -23,8 +23,15 @@ cd ./default_test_model
 
 It will be placed to `./default_test_model/checkpoint.pth`
 
-If you have some issues using bash utilities, you may download model directly from [google drive](https://drive.google.com/drive/folders/12nfElb7A6v7Y6Kd0z8qsIQo9FRUS2dg4?usp=sharing)
+If you have some issues using bash utilities, you may download model directly from [google drive](https://drive.google.com/file/d/1lr14jvV3M3zm75KoLrJcMnsFrQ4OYtp1/view?usp=sharing)
 
+## Mix datasets
+
+To mix datasets, use `mix.py` file
+```shell
+python mix.py -p <path_to_dataset> -o <path_to_output_mixed_dataset>
+```
+Or just add needed `MixedDataset` to config file, it will automatically download LibriSpeech to create mixes.
 
 ## Run unit tests
 
@@ -38,7 +45,6 @@ python -m unittest discover hw_ss/tests
 
 ```shell
 python test.py \
-   -c default_test_config.json \
    -r default_test_model/checkpoint.pth \
    -t test_data \
    -o test_result.json

@@ -1,5 +1,5 @@
 {
-    "name": "one_batch_test",
+    "name": "default_config",
     "n_gpu": 1,
     "preprocessing": {
         "sr": 16000,
@@ -16,48 +16,50 @@
     "arch": {
         "type": "SpExp",
         "args": {
-            "N": 10,
+            "N": 64,
             "L1": 25,
             "L2": 100,
             "L3": 200,
-            "O": 10,
-            "P": 20,
-            "Q": 32,
+            "O": 64,
+            "P": 32,
+            "Q": 3,
             "num_speakers": 10000
         }
     },
     "data": {
         "train": {
-            "batch_size": 2,
-            "num_workers": 0,
+            "batch_size": 10,
+            "num_workers": 5,
             "datasets": [
                 {
                     "type": "MixerDataset",
                     "args": {
-                        "part": "dev-clean",
-                        "max_audio_length": 20.0,
-                        "limit": 10
+                        "data_dir": "/kaggle/input/tgritsaev-big-mixture-w-text/mixture",
+                        "index_dir": "/kaggle/working",
+                        "part": "train",
+                        "max_audio_length": 5.0
                     }
                 }
             ]
         },
-        "val": {
-            "batch_size": 2,
-            "num_workers": 0,
+        "test": {
+            "batch_size": 10,
+            "num_workers": 5,
             "datasets": [
                 {
                     "type": "MixerDataset",
                     "args": {
-                        "part": "dev-clean-4",
-                        "max_audio_length": 20.0,
-                        "limit": 10
+                        "data_dir": "/kaggle/input/tgritsaev-big-mixture-w-text/mixture",
+                        "index_dir": "/kaggle/working",
+                        "part": "test",
+                        "limit": 50
                     }
                 }
             ]
         }
     },
     "optimizer": {
-        "type": "Adam",
+        "type": "AdamW",
         "args": {
             "lr": 0.003
         }
@@ -88,14 +90,14 @@
         "type": "OneCycleLR",
         "args": {
             "steps_per_epoch": 100,
-            "epochs": 50,
+            "epochs": 500,
             "anneal_strategy": "cos",
             "max_lr": 0.003,
             "pct_start": 0.2
         }
     },
     "trainer": {
-        "epochs": 30,
+        "epochs": 500,
         "save_dir": "saved/",
         "save_period": 5,
         "verbosity": 2,
